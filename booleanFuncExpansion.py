@@ -21,11 +21,11 @@ def random_perm_read_k_BP(n,k,w):
         perm_matrix[np.arange(w), perm] = 1
         permutation_matrices_1.append(perm_matrix)
 
-    for i, matrix in enumerate(permutation_matrices_0):
-        print(f"Positive Permutation Matrix {i+1}:\n{matrix}\n")
+    # for i, matrix in enumerate(permutation_matrices_0):
+    #     print(f"Positive Permutation Matrix {i+1}:\n{matrix}\n")
     
-    for i, matrix in enumerate(permutation_matrices_1):
-        print(f"negative Permutation Matrix {i+1}:\n{matrix}\n")
+    # for i, matrix in enumerate(permutation_matrices_1):
+    #     print(f"negative Permutation Matrix {i+1}:\n{matrix}\n")
 
     num_rows = 2 ** n
     truth_table = np.zeros((num_rows, n + 1))
@@ -40,6 +40,54 @@ def random_perm_read_k_BP(n,k,w):
                 current_matrix = np.dot(current_matrix, permutation_matrices_1[j])
             else:
                 current_matrix = np.dot(current_matrix, permutation_matrices_0[j])
+        
+        # Assign the (1,1)-element of the final matrix to the function value
+        truth_table[i, n] = current_matrix[0, 0]
+        truth_table[i, :n] = assignment
+
+    return truth_table
+
+# random read-k branching program
+def random_read_k_BP(n,k,w):
+    # Create an array with each element from 1 to n appearing k times
+    var_ordering = np.tile(np.arange(1, n+1), k)
+    # Shuffle the var_ordering to randomize the order of elements
+    np.random.shuffle(var_ordering)
+    print(var_ordering)
+    matrices_0 = []
+    matrices_1 = []
+    for _ in range(n*k):
+        matrix = np.zeros((w, w))
+        for i in range(w):
+            col_index = np.random.randint(w)
+            matrix[i, col_index] = 1
+        matrices_0.append(matrix)
+
+        matrix = np.zeros((w, w))
+        for i in range(w):
+            col_index = np.random.randint(w)
+            matrix[i, col_index] = 1
+        matrices_1.append(matrix)
+
+    # for i, matrix in enumerate(matrices_0):
+    #     print(f"Positive Permutation Matrix {i+1}:\n{matrix}\n")
+    
+    # for i, matrix in enumerate(matrices_1):
+    #     print(f"negative Permutation Matrix {i+1}:\n{matrix}\n")
+
+    num_rows = 2 ** n
+    truth_table = np.zeros((num_rows, n + 1))
+
+    for i in range(num_rows):
+        assignment = np.array(list(map(int, np.binary_repr(i, width=n))))
+        current_matrix = np.eye(w)
+        
+        for j in range(n * k):
+            var_index = var_ordering[j] - 1  # Adjust for 0-based indexing in Python
+            if assignment[var_index] == 1:
+                current_matrix = np.dot(current_matrix, matrices_1[j])
+            else:
+                current_matrix = np.dot(current_matrix, matrices_0[j])
         
         # Assign the (1,1)-element of the final matrix to the function value
         truth_table[i, n] = current_matrix[0, 0]
@@ -141,16 +189,17 @@ def sum_abs_values_of_terms_by_degree(coeffs):
     
     return degree_sums
 
-n = 15
+n = 10
 k=2
 w=3
 
-f_table = random_perm_read_k_BP(n,k,w)
+f_table = random_read_k_BP(n,k,w)
 f_vals = f_table[:, n].astype(int)
 coeffs, fourier_expansion = boolean_fourier_expansion(f_vals)
 truth_table = fourier_coeffs_to_boolean_function(coeffs)
-print(fourier_expansion)
+# print(fourier_expansion)
 
+print(f'Number of variables: {n}, read times: {k}, width: {w}')
 degree_sums = sum_abs_values_of_terms_by_degree(coeffs)
 for d in range(1, n + 1):
     print(f"Sum of absolute values of terms with degree {d}: {degree_sums[d]}")
